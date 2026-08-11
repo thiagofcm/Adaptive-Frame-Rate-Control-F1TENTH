@@ -13,8 +13,8 @@ import time
 
 # settings
 SHOW_TRAIN = False
-SHOW_TEST = False
-# SHOW_TEST = True
+# SHOW_TEST = False
+SHOW_TEST = True
 VERBOSE = True
 LOGGING = True
 
@@ -215,11 +215,18 @@ class TestSimulation():
 
 def main():
     # run_file = "PP_speeds"
-    run_file = "PP_maps8"
+    #run_file = "PP_maps8"
     # run_file = "Eval_RewardsSlow"
-    
-    
+    run_file = "TAL_maps"
     sim = TestSimulation(run_file)
+
+    # Keep only the AUT model with n=0
+    sim.run_data = [
+        run for run in sim.run_data
+        if run.map_name == "f1_aut" and run.n == 0
+    ]
+    sim.run_data[0].n_test_laps = 1
+    
     sim.run_testing_evaluation()
 
 

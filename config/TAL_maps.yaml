@@ -21,6 +21,8 @@ n_test_laps: 20
 max_speed: 6
 reward: "TAL"
 
+noise_std: 0.0
+
 runs:
   - map_name: "f1_esp"
   - map_name: "f1_mco"

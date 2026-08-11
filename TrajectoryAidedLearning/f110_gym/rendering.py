@@ -152,9 +152,79 @@ class EnvRenderer(pyglet.window.Window):
         map_coords = np.vstack((map_x, map_y, map_z))
 
         # mask and only leave the obstacle points
+        # map_mask = map_img == 0.0
+        # map_mask_flat = map_mask.flatten()
+        # map_points = 50. * map_coords[:, map_mask_flat].T
+
+        # Find occupied / non-track pixels
         map_mask = map_img == 0.0
-        map_mask_flat = map_mask.flatten()
-        map_points = 50. * map_coords[:, map_mask_flat].T
+
+        # Keep only pixels lying on the boundary of the occupied region
+        boundary_mask = np.zeros_like(map_mask, dtype=bool)
+
+        boundary_mask[1:-1, 1:-1] = (
+            map_mask[1:-1, 1:-1]
+            & (
+                ~map_mask[:-2, 1:-1] |
+                ~map_mask[2:, 1:-1] |
+                ~map_mask[1:-1, :-2] |
+                ~map_mask[1:-1, 2:]
+            )
+        )
+
+        boundary_mask_flat = boundary_mask.flatten()
+
+        map_points = 50. * map_coords[:, boundary_mask_flat].T
+
+        # --------------------------------------------------
+        # Fit camera to entire map
+        # --------------------------------------------------
+
+        min_x = np.min(map_points[:, 0])
+        max_x = np.max(map_points[:, 0])
+
+        min_y = np.min(map_points[:, 1])
+        max_y = np.max(map_points[:, 1])
+
+        map_width = max_x - min_x
+        map_height = max_y - min_y
+
+        # Add some empty space around the track
+        padding = 0.08
+
+        min_x -= map_width * padding
+        max_x += map_width * padding
+
+        min_y -= map_height * padding
+        max_y += map_height * padding
+
+        view_width = max_x - min_x
+        view_height = max_y - min_y
+
+        window_aspect = self.width / self.height
+        map_aspect = view_width / view_height
+
+        if map_aspect > window_aspect:
+            # Map is wider than the window
+            required_height = view_width / window_aspect
+            extra = required_height - view_height
+
+            min_y -= extra / 2
+            max_y += extra / 2
+
+        else:
+            # Map is taller than the window
+            required_width = view_height * window_aspect
+            extra = required_width - view_width
+
+            min_x -= extra / 2
+            max_x += extra / 2
+
+        self.left = min_x
+        self.right = max_x
+        self.bottom = min_y
+        self.top = max_y
+
         for i in range(map_points.shape[0]):
             self.batch.add(1, GL_POINTS, None, ('v3f/stream', [map_points[i, 0], map_points[i, 1], map_points[i, 2]]), ('c3B/stream', [183, 193, 222]))
         self.map_points = map_points
@@ -208,13 +278,13 @@ class EnvRenderer(pyglet.window.Window):
         super().on_resize(width, height)
 
         # update camera value
-        (width, height) = self.get_size()
-        self.left = -self.zoom_level * width/2
-        self.right = self.zoom_level * width/2
-        self.bottom = -self.zoom_level * height/2
-        self.top = self.zoom_level * height/2
-        self.zoomed_width = self.zoom_level * width
-        self.zoomed_height = self.zoom_level * height
+        # (width, height) = self.get_size()
+        # self.left = -self.zoom_level * width/2
+        # self.right = self.zoom_level * width/2
+        # self.bottom = -self.zoom_level * height/2
+        # self.top = self.zoom_level * height/2
+        # self.zoomed_width = self.zoom_level * width
+        # self.zoomed_height = self.zoom_level * height
 
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
         """
