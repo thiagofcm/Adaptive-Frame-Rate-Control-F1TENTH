@@ -1,0 +1,30 @@
+# Environment
+env_id: AdaptiveFPS-v0
+run_file: TAL_maps
+map_name: f1_aut
+model_run_name: fast_Std_Std_TAL_f1_aut_6_5_0
+
+# Adaptive sensing
+budget: 300
+frame_cost: 0.0
+
+# Training
+total_timesteps: 100000
+num_envs: 8
+num_steps: 128
+num_minibatches: 4
+update_epochs: 4
+
+# PPO
+learning_rate: 0.0003
+gamma: 0.99
+gae_lambda: 0.98
+clip_coef: 0.2
+ent_coef: 0.05
+vf_coef: 0.5
+max_grad_norm: 0.5
+
+# Runtime
+seed: 1
+cuda: false
+async_envs: true

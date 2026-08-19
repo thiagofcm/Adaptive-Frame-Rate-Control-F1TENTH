@@ -257,7 +257,7 @@ class F110Env(gym.Env):
         p_done = self.sim.agents[0].scan_simulator.check_location(location)
         if not p_done:
             return False
-        print(f"Personl done called: {location}")
+        #print(f"Personl done called: {location}")
         return True
 
     def _update_state(self, obs_dict):

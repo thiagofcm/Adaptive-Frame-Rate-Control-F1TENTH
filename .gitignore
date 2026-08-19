@@ -123,9 +123,40 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-Data/Vehicles/
+#Data/Vehicles/
 
 Data/Images/
 
-
 Data/UploadImgs2/
+
+#Ignore NPY
+*.npy
+
+# TensorBoard logs
+events.out.tfevents.*
+
+# Ignore Models
+*.pt
+*.pth
+
+# Ignore TAL maps test data
+Data/Vehicles/TAL_mapsTest/*
+
+# --------------------------------------------------
+# Keep only the seed/run 0 folders
+# --------------------------------------------------
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_aut_6_5_0/
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_esp_6_5_0/
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_gbr_6_5_0/
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_mco_6_5_0/
+
+# Explicitly keep only the actors.
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_aut_6_5_0/fast_Std_Std_TAL_f1_aut_6_5_0_actor.pth
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_esp_6_5_0/fast_Std_Std_TAL_f1_esp_6_5_0_actor.pth
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_gbr_6_5_0/fast_Std_Std_TAL_f1_gbr_6_5_0_actor.pth
+!Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_mco_6_5_0/fast_Std_Std_TAL_f1_mco_6_5_0_actor.pth
+
+
+
+
+
