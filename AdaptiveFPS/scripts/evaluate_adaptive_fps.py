@@ -42,13 +42,13 @@ RUN_FILE = "TAL_maps"
 
 EVAL_ROOT = "AdaptiveFPS/eval"
 EPISODE_CSV_FIELDS = [
-    "mean_fps", "lap_index", "success", "crashed", "lap_time", "final_progress",
-    "episode_return", "nav_episode_return", "n_control_steps", "n_fresh_observations",
+    "lap_index", "success", "crashed", "mean_fps", "lap_time", "final_progress",
+    "episode_return", "nav_episode_return", "steps_length", "n_fresh_observations",
     "fresh_observation_ratio", "final_x", "final_y",
 ]
 STEP_CSV_FIELDS = [
-    "control_step", "lap_time", "x", "y", "yaw", "velocity", "steering_state",
-    "commanded_steering", "commanded_speed", "lidar_fresh",
+    "step", "lap_time", "x", "y", "yaw", "velocity", "steering_state",
+    "commanded_steering", "commanded_speed", "frame_consumed",
     "inst_nav_reward",
     "inst_frame_penalty",
     "inst_adaptive_reward",
@@ -224,7 +224,7 @@ def summarize_results(map_name):
     print(f"Summary written to: {summary_path}")
 
 
-def run_lap(env, fixed_fps, lap_dir,model=None):
+def run_lap(env, fixed_fps, lap_dir, model=None, lap_index=None):
 
     adaptive_episode_return = 0.0
     nav_episode_return = 0.0
@@ -267,12 +267,13 @@ def run_lap(env, fixed_fps, lap_dir,model=None):
         adaptive_episode_return += reward
         nav_episode_return += info["nav_reward"]
 
-        if info["lidar_fresh"]:
+        if info["frame_consumed"]:
             n_fresh_observations += 1
+
         fps_trace.append(info["current_fps"])
 
         step_rows.append({
-            "control_step": control_step_index,
+            "step": control_step_index,
             "lap_time": env.current_observation["current_laptime"],
             "x": pre_step_state[0],
             "y": pre_step_state[1],
@@ -281,7 +282,7 @@ def run_lap(env, fixed_fps, lap_dir,model=None):
             "steering_state": pre_step_state[4],
             "commanded_steering": info["navigation_action"][0],
             "commanded_speed": info["navigation_action"][1],
-            "lidar_fresh": info["lidar_fresh"],
+            "frame_consumed": info["frame_consumed"],
             "inst_nav_reward": info["nav_reward"],
             "cumulative_nav_reward": nav_episode_return,
             "inst_adaptive_reward": reward,
@@ -315,7 +316,7 @@ def run_lap(env, fixed_fps, lap_dir,model=None):
         writer = csv.DictWriter(file, fieldnames=STEP_CSV_FIELDS)
         writer.writeheader()
         writer.writerows(step_rows)
-    np.save(f"{lap_dir}/trajectory.npy", np.array(trajectory_rows, dtype=np.float64))
+    np.save(f"{lap_dir}/trajectory_lap_{lap_index}.npy", np.array(trajectory_rows, dtype=np.float64))
 
     return {
         "mean_fps": float(np.mean(fps_trace)) if fps_trace else 0.0,
@@ -325,7 +326,7 @@ def run_lap(env, fixed_fps, lap_dir,model=None):
         "final_progress": info["progress"],
         "episode_return": adaptive_episode_return,
         "nav_episode_return": nav_episode_return,
-        "n_control_steps": control_step_count,
+        "steps_length": control_step_count,
         "n_fresh_observations": n_fresh_observations,
         "fresh_observation_ratio": n_fresh_observations / control_step_count if control_step_count else 0.0,
         "final_x": true_obs["state"][0],
@@ -383,14 +384,14 @@ def main():
     episode_rows = []
     for lap_index in range(args.n_laps):
         lap_dir = f"{out_dir}/lap_{lap_index:02d}"
-        row = run_lap(env, fixed_fps, lap_dir, model)
+        row = run_lap(env, fixed_fps, lap_dir, model, lap_index)
         row["lap_index"] = lap_index
         episode_rows.append(row)
 
         print(f"[{model_label}] Lap {lap_index}: success={row['success']} crashed={row['crashed']} "
               f"lap_time={row['lap_time']:.2f} progress={row['final_progress']:.3f} "
               f"adaptive_return={row['episode_return']:.3f} nav_return={row['nav_episode_return']:.3f} ",
-              f"mean_fps={row['mean_fps']:.2f} ", f"fresh_obs={row['n_fresh_observations']}/{row['n_control_steps']} "
+              f"mean_fps={row['mean_fps']:.2f} ", f"fresh_obs={row['n_fresh_observations']}/{row['steps_length']} "
               f"({row['fresh_observation_ratio']:.2f})")
 
     env.close()
@@ -421,7 +422,7 @@ def main():
     print(f"  mean adaptive_episode_return=" f"{np.mean([row['episode_return'] for row in episode_rows]):.4f}")
     print(f"  mean nav_episode_return="f"{np.mean([row['nav_episode_return'] for row in episode_rows]):.4f}")
     print(f"  mean n_fresh_observations={np.mean([row['n_fresh_observations'] for row in episode_rows]):.4f}")
-    print(f"  mean n_control_steps={np.mean([row['n_control_steps'] for row in episode_rows]):.4f}")
+    print(f"  mean steps={np.mean([row['steps_length'] for row in episode_rows]):.4f}")
     print(f"  mean fresh_observation_ratio={np.mean([row['fresh_observation_ratio'] for row in episode_rows]):.4f}")
 
 

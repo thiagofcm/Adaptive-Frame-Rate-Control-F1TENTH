@@ -123,11 +123,11 @@ def load_step_rows(eval_dir, lap_index):
         rows = list(csv.DictReader(file))
 
     for row in rows:
-        row['control_step'] = int(row['control_step'])
-        row['lidar_fresh'] = row['lidar_fresh'] == 'True'
+        row['step'] = int(row['step'])
+        row['frame_consumed'] = row['frame_consumed'] == 'True'
         for key in ('lap_time', 'x', 'y', 'yaw', 'velocity', 'steering_state',
-                    'commanded_steering', 'commanded_speed', 'instantaneous_reward',
-                    'cumulative_reward', 'progress'):
+                    'commanded_steering', 'commanded_speed', 'inst_nav_reward',
+                    'cumulative_nav_reward', 'progress'):
             row[key] = float(row[key])
         if 'current_fps' in row:
             row['current_fps'] = float(row['current_fps'])
@@ -139,7 +139,7 @@ def find_trajectory_npy(eval_dir, lap_index):
     lap_dir = f"{eval_dir}/lap_{lap_index:02d}"
     # AdaptiveFPS's own fixed filename, then fall back to FixedFPS's
     # VehicleStateHistory naming (Lap_<i>_history_<run_name>_<map>.npy)
-    for pattern in (f"{lap_dir}/trajectory.npy", f"{lap_dir}/Lap_*_history_*.npy"):
+    for pattern in (f"{lap_dir}/trajectory_lap_{lap_index}.npy", f"{lap_dir}/Lap_*_history_*.npy"):
         matches = glob.glob(pattern)
         if matches:
             return matches[0]

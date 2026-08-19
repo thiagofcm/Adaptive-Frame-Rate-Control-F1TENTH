@@ -7,9 +7,9 @@ run_file: TAL_maps
 map_name: f1_aut
 model_run_name: fast_Std_Std_TAL_f1_aut_6_5_0
 
-budget: 300
+budget: 150
 
-total_timesteps: 10_000_000
+total_timesteps: 15_000_000
 num_envs: 16
 num_steps: 512
 num_minibatches: 4
