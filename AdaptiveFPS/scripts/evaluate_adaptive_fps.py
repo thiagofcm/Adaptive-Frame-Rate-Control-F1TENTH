@@ -54,7 +54,7 @@ STEP_CSV_FIELDS = [
     "inst_adaptive_reward",
     "cumulative_nav_reward",
     "cumulative_adaptive_reward",
-    "progress", "current_fps",
+    "progress", "current_fps", "budget_penalty_applied",
 ]
 # [x, y, yaw, velocity, steering_state, commanded_steering, commanded_speed, current_fps] -
 # necessarily a different layout from VehicleStateHistory's 9-column full_states-based
@@ -290,6 +290,7 @@ def run_lap(env, fixed_fps, lap_dir, model=None, lap_index=None):
             "inst_frame_penalty": info["frame_penalty"],
             "progress": info["progress"],
             "current_fps": info["current_fps"],
+            "budget_penalty_applied": info["budget_penalty_applied"],
         })
         trajectory_rows.append([
             pre_step_state[0], pre_step_state[1], pre_step_state[2],
@@ -349,6 +350,8 @@ def main():
                         help="frame cost to use for adaptive PPO evaluation (ignored if --fixed is set)")
     parser.add_argument("--bud", type=float, default=300.0, required=True,
                         help="budget to use for adaptive PPO evaluation (ignored if --fixed is set)")
+    parser.add_argument("--budget-penalty", type=float, default=10.0,
+                        help="flat reward magnitude applied once per episode when budget is exceeded (ignored if --fixed is set)")
     parser.add_argument("--map", default=MAP_NAME_DEFAULT)
     args = parser.parse_args()
 
@@ -357,10 +360,11 @@ def main():
     map_name = args.map
     budget = args.bud
     frame_cost = args.fc
+    budget_penalty = args.budget_penalty
 
     atexit.register(summarize_results, map_name)
 
-    env = AdaptiveFPSEnv(RUN_FILE, map_name, navigation_model,budget,frame_cost)
+    env = AdaptiveFPSEnv(RUN_FILE, map_name, navigation_model, budget, frame_cost, budget_penalty)
 
     if fixed_fps is not None:
         out_dir = f"{EVAL_ROOT}/{map_name}/fixed_{fixed_fps}Hz"
@@ -379,7 +383,7 @@ def main():
 
         print(f"Loaded PPO model: {args.model}")
         model_label = f"adaptive_fc_{args.fc}"
-        out_dir = f"{EVAL_ROOT}/{map_name}/adaptive_fc_{args.fc}_bud_{args.bud}"
+        out_dir = f"{EVAL_ROOT}/{map_name}/adaptive_fc_{args.fc}_bud_{args.bud}_bp_{args.budget_penalty}"
 
     episode_rows = []
     for lap_index in range(args.n_laps):

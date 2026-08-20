@@ -1,0 +1,3 @@
+This folder contain policies that were supposed to be trained with a budget penalty. 
+However, the logic was not being applied in the adaptive fps env file. Thus, all the policies
+present in this folder could be interpreted as reruns of the same policy wo any budget penalty, as previous results.

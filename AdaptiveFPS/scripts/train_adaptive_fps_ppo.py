@@ -122,10 +122,12 @@ class Args:
     """nominal frame budget per episode"""
     frame_cost: float = 0.0
     """penalty applied when a fresh frame is consumed"""
+    budget_penalty: float = 10.0
+    """flat reward override applied once per episode, the first tick episode_frame_count exceeds budget"""
 
-def make_env(env_id, run_file, map_name, model_run_name, max_episode_steps, budget, frame_cost):
+def make_env(env_id, run_file, map_name, model_run_name, max_episode_steps, budget, frame_cost, budget_penalty):
     def thunk():
-        env = gym.make(env_id, run_file=run_file, map_name=map_name, model_run_name=model_run_name, budget=budget, frame_cost=frame_cost)
+        env = gym.make(env_id, run_file=run_file, map_name=map_name, model_run_name=model_run_name, budget=budget, frame_cost=frame_cost, budget_penalty=budget_penalty)
         env = TimeLimit(env, max_episode_steps=max_episode_steps)
         env = gym.wrappers.RecordEpisodeStatistics(env)
         return env
@@ -238,7 +240,7 @@ if __name__ == "__main__":
     args.num_iterations = args.total_timesteps // args.batch_size
 
     date_str = datetime.now().strftime("%d-%m-%H-%M-%S")
-    run_name = f"{args.env_id}_{date_str}_{args.frame_cost}_{args.budget}"
+    run_name = f"{args.env_id}_{args.map_name}_{date_str}_fc_{args.frame_cost}_bud_{args.budget}_bp_{args.budget_penalty}"
 
     if args.track:
         import wandb
@@ -275,7 +277,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # env setup
-    env_fns = [make_env(args.env_id, args.run_file, args.map_name, args.model_run_name, args.max_episode_steps, args.budget, args.frame_cost)
+    env_fns = [make_env(args.env_id, args.run_file, args.map_name, args.model_run_name, args.max_episode_steps, args.budget, args.frame_cost, args.budget_penalty)
                for _ in range(args.num_envs)]
     if args.async_envs:
         envs = gym.vector.AsyncVectorEnv(env_fns, context="fork")

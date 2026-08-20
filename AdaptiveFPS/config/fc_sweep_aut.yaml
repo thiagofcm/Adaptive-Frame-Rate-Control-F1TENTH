@@ -8,6 +8,7 @@ map_name: f1_aut
 model_run_name: fast_Std_Std_TAL_f1_aut_6_5_0
 
 budget: 150
+budget_penalty: 10.0
 
 total_timesteps: 15_000_000
 num_envs: 16

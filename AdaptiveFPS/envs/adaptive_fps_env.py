@@ -30,7 +30,7 @@ PHYSICS_TIMESTEP = 0.01
 
 
 class AdaptiveFPSEnv(gymnasium.Env):
-    def __init__(self, run_file, map_name, model_run_name, budget, frame_cost):
+    def __init__(self, run_file, map_name, model_run_name, budget, frame_cost, budget_penalty=10.0):
         super().__init__()
 
         run_data = setup_run_list(run_file)
@@ -96,6 +96,9 @@ class AdaptiveFPSEnv(gymnasium.Env):
         self.budget = budget
         # frame_cost: placeholder for a later reward-shaping stage - unused here.
         self.frame_cost = frame_cost
+        # budget_penalty: flat reward override applied once per episode, the
+        # first tick episode_frame_count exceeds budget (see step()).
+        self.budget_penalty = budget_penalty
         # max_obs_interval: control steps between fresh reads at the lowest
         # available FPS - the normalization denominator for obs_age_ratio.
         self.max_obs_interval = int(self.control_frequency / min(self.fps_choices))
@@ -112,6 +115,7 @@ class AdaptiveFPSEnv(gymnasium.Env):
         self.obs_interval = None
         self.prev_obs = None
         self.prev_action = None
+        self.budget_penalty_applied = False
         self.cumulative_reward = 0.0
         self.progress = 0.0
 
@@ -161,6 +165,7 @@ class AdaptiveFPSEnv(gymnasium.Env):
         # frames acquired as a result of an adaptive decision. The reset scan
         # is the deterministic initial condition, not a policy choice.
         self.episode_frame_count = 0
+        self.budget_penalty_applied = False
 
         # Initial FPS = 10 Hz -> obs_interval = 1, so the very first step()
         # call is guaranteed to hit the sensing gate (steps_since_last_obs(1)
@@ -223,6 +228,11 @@ class AdaptiveFPSEnv(gymnasium.Env):
         self.progress = max(self.progress, phys_info["progress"])
         frame_penalty = self.frame_cost if frame_consumed else 0.0
         reward = nav_reward - frame_penalty
+
+        if not observation["lap_done"] and self.episode_frame_count > self.budget and not self.budget_penalty_applied:
+            reward = -self.budget_penalty
+            self.budget_penalty_applied = True
+
         self.cumulative_reward += reward
 
         # ---------------------------------
@@ -257,7 +267,7 @@ class AdaptiveFPSEnv(gymnasium.Env):
         info = {
             "navigation_action": navigation_action,
             "nav_reward": nav_reward,
-            "reward,": reward,
+            "reward": reward,
             "current_fps": self.current_fps,
             "obs_interval": self.obs_interval,
             "steps_since_last_obs": self.steps_since_last_obs,
@@ -267,6 +277,7 @@ class AdaptiveFPSEnv(gymnasium.Env):
             "progress": self.progress,
             "cumulative_reward": self.cumulative_reward,
             "frame_penalty": frame_penalty,
+            "budget_penalty_applied": self.budget_penalty_applied
         }
 
         if terminated:
