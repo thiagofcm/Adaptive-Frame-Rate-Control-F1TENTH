@@ -28,5 +28,5 @@ cuda: false
 async_envs: true
 
 sweep:
-  frame_cost: [0.01, 0.02, 0.2, 0.4]
-  budget: [300, 150, 100]
+  frame_cost: [0.04]
+  budget: [300,150,100]
