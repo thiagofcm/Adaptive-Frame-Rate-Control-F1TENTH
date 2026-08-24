@@ -38,6 +38,10 @@ def parse_success_column(series: pd.Series) -> pd.Series:
 def compute_statistics(csv_path: Path):
     df = pd.read_csv(csv_path)
 
+    if df.empty:
+        print(f"Error: {csv_path} has no episode rows; cannot compute statistics.", file=sys.stderr)
+        sys.exit(1)
+
     steps_length = df["steps_length"]
     n_fresh = df["n_fresh_observations"]
 
@@ -73,6 +77,13 @@ def compute_statistics(csv_path: Path):
         mean_fresh_success = float("nan")
         std_fresh_success = float("nan")
 
+    # ── 4. Success rate (%) ──────────────────────────────────────────
+    # Independent of the "given success" stats above: this stays a real
+    # percentage (0.0, not NaN) even when there are zero successes, since
+    # 0% is a meaningful, known result -- unlike the fresh-observations
+    # stats, which are genuinely undefined with no successful episodes.
+    success_rate_percent = (n_success / len(df)) * 100.0
+
     # ── Write statistics.csv ────────────────────────────────────────
     out_path = csv_path.parent / "statistics.csv"
     summary = pd.DataFrame([{
@@ -82,6 +93,7 @@ def compute_statistics(csv_path: Path):
         "std_observation_reduction_percent": round(std_reduction, 4),
         "mean_fresh_observations_given_success": round(mean_fresh_success, 4),
         "std_fresh_observations_given_success": round(std_fresh_success, 4),
+        "success_rate_percent": round(success_rate_percent, 4),
     }])
     # na_rep="NaN" so a fully-empty-success eval writes literal "NaN", not a blank cell
     summary.to_csv(out_path, index=False, na_rep="NaN")
@@ -89,6 +101,7 @@ def compute_statistics(csv_path: Path):
     # ── Console summary ─────────────────────────────────────────────
     print(f"Processed {len(df)} episodes")
     print(f"Successful episodes: {n_success}")
+    print(f"Success Rate = {success_rate_percent:.2f}%")
     print()
     print(f"Measurement : No Measurement = 1:({mean_ratio:.2f} ± {std_ratio:.2f})")
     print(f"Observation Reduction = {mean_reduction:.2f} ± {std_reduction:.2f}%")

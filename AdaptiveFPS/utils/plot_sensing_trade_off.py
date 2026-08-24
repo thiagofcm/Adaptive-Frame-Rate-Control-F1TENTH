@@ -20,6 +20,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.ticker import MaxNLocator
 
 
 def parse_policy_name(policy):
@@ -204,15 +205,52 @@ def main():
         raise ValueError("No policies remained after filtering.")
 
     # ---------------------------------------------------------
+    # Publication-style figure settings
+    # ---------------------------------------------------------
+
+    plt.rcParams.update({
+        "font.size": 10,
+        "axes.labelsize": 12,
+        "axes.titlesize": 13,
+        "axes.linewidth": 1.1,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "legend.fontsize": 9,
+    })
+
+    # Distinct, print-safe marker/color per budget series.
+    budget_style = {
+        300.0: {"marker": "o", "color": "#08519c"},
+        150.0: {"marker": "s", "color": "#e6550d"},
+    }
+
+    # Per-(budget, frame_cost) text offsets (in points) for the handful of
+    # policies whose default offset would collide with a nearby
+    # marker/label/line in the crowded upper-right region (fc = 0.05, 0.075,
+    # 0.1). Anything not listed falls back to DEFAULT_OFFSET. Only the label
+    # position is adjusted -- the underlying data points are never moved.
+    annotation_offsets = {
+        (300, 0.02): (2, 16),
+        (150, 0.0): (10, -8),
+        (300, 0.05): (-8, 14),
+        (150, 0.05): (-4, -14),
+        (300, 0.075): (2, 16),
+        (150, 0.075): (6, -16),
+        (300, 0.1): (-8, -14),
+        (150, 0.1): (10, 6),
+    }
+    default_offset = (7, 7)
+
+    def annotation_offset(budget, frame_cost):
+        return annotation_offsets.get(
+            (int(round(budget)), frame_cost), default_offset
+        )
+
+    # ---------------------------------------------------------
     # Create scatter plot
     # ---------------------------------------------------------
 
     fig, ax = plt.subplots(figsize=(8, 5.5))
-
-    markers = {
-        300.0: "o",
-        150.0: "s",
-    }
 
     for budget in sorted(plot_df["budget"].unique(), reverse=True):
 
@@ -220,23 +258,33 @@ def main():
             plot_df["budget"] == budget
         ].sort_values("frame_cost")
 
-        ax.scatter(
-            subset["mean_observation_reduction_percent"],
-            subset["success_rate"],
-            marker=markers.get(budget, "o"),
-            s=75,
-            label=f"Budget = {int(budget)}",
-        )
+        style = budget_style.get(budget, {"marker": "o", "color": "black"})
 
-        # Connect policies from increasing frame cost.
+        # Connecting line first, kept visually secondary to the markers.
         ax.plot(
             subset["mean_observation_reduction_percent"],
             subset["success_rate"],
-            linewidth=1,
-            alpha=0.6,
+            linewidth=1.3,
+            alpha=0.55,
+            color=style["color"],
+            zorder=1,
         )
 
-        # Label each point with frame cost.
+        ax.scatter(
+            subset["mean_observation_reduction_percent"],
+            subset["success_rate"],
+            marker=style["marker"],
+            s=80,
+            color=style["color"],
+            edgecolors="black",
+            linewidths=0.6,
+            label=f"Budget = {int(budget)}",
+            zorder=3,
+        )
+
+        # Label each point with frame cost, using a budget/frame-cost-aware
+        # offset so nearby labels don't overlap each other, the markers,
+        # the connecting lines, the legend, or the plot boundaries.
         for _, row in subset.iterrows():
 
             fc = row["frame_cost"]
@@ -246,39 +294,70 @@ def main():
             else:
                 fc_label = f"{fc:g}"
 
+            dx, dy = annotation_offset(budget, fc)
+            ha = "left" if dx >= 0 else "right"
+            va = "bottom" if dy >= 0 else "top"
+
             ax.annotate(
                 f"$f_c={fc_label}$",
                 (
                     row["mean_observation_reduction_percent"],
                     row["success_rate"],
                 ),
-                xytext=(5, 5),
+                xytext=(dx, dy),
                 textcoords="offset points",
                 fontsize=8,
+                ha=ha,
+                va=va,
+                color=style["color"],
+                annotation_clip=True,
+                zorder=4,
             )
 
     # ---------------------------------------------------------
     # Formatting
     # ---------------------------------------------------------
 
-    ax.set_xlabel("Observation Reduction (%)")
+    ax.set_xlabel("Observation Skipping Rate (%)")
     ax.set_ylabel("Success Rate (%)")
 
-    ax.set_title(
-        "Sensing Efficiency vs. Navigation Performance"
-    )
+    ax.set_title("Sensing–Performance Trade-off")
 
     ax.grid(
         True,
         linestyle="--",
         linewidth=0.5,
-        alpha=0.5,
+        alpha=0.35,
+        zorder=0,
     )
 
-    ax.legend(loc="lower left")
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.1)
 
-    # Success is percentage.
-    ax.set_ylim(85, 101)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=7))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+
+    # Data-driven axis limits with a small margin so no marker or annotation
+    # sits directly against the border. Success rate is concentrated near
+    # the upper end, so the y-axis is not forced to start at 0.
+    x_vals = plot_df["mean_observation_reduction_percent"]
+    y_vals = plot_df["success_rate"]
+
+    x_margin = (x_vals.max() - x_vals.min()) * 0.12
+    y_margin = (y_vals.max() - y_vals.min()) * 0.25
+
+    ax.set_xlim(x_vals.min() - x_margin, x_vals.max() + x_margin)
+    ax.set_ylim(y_vals.min() - y_margin, y_vals.max() + y_margin)
+
+    legend = ax.legend(
+        loc="lower left",
+        frameon=True,
+        framealpha=0.95,
+        edgecolor="black",
+        borderpad=0.6,
+        handletextpad=0.6,
+    )
+    legend.get_frame().set_linewidth(0.8)
 
     fig.tight_layout()
 
@@ -286,20 +365,19 @@ def main():
     # Save
     # ---------------------------------------------------------
 
-    output_path = root / "sensing_efficiency_tradeoff.png"
+    png_path = root / "sensing_efficiency_tradeoff.png"
+    pdf_path = root / "sensing_efficiency_tradeoff.pdf"
 
-    fig.savefig(
-        output_path,
-        dpi=300,
-        bbox_inches="tight",
-    )
+    fig.savefig(png_path, dpi=300, bbox_inches="tight")
+    fig.savefig(pdf_path, bbox_inches="tight")
 
     plt.close(fig)
 
     print(f"Policies plotted: {len(plot_df)}")
     print()
-    print("Saved plot to:")
-    print(output_path)
+    print("Saved plots to:")
+    print(png_path)
+    print(pdf_path)
 
 
 if __name__ == "__main__":
