@@ -1,4 +1,4 @@
-mean_fps,lap_index,success,crashed,lap_time,final_progress,episode_return,n_control_steps,n_fresh_observations,fresh_observation_ratio,final_x,final_y
+mean_fps,lap_index,success,crashed,lap_time,final_progress,episode_return,steps_length,n_fresh_observations,fresh_observation_ratio,final_x,final_y
 5.0,0,False,True,4.389999999999951,0.20169466384049098,3.6414821770107206,44,22,0.5,11.847872488243585,-9.077588194897668
 5.0,1,False,True,3.7699999999999636,0.16922874134907986,2.9522388067638703,38,19,0.5,13.011321869930601,-5.614422554259449
 5.0,2,False,True,15.469999999999715,0.7114814778988757,15.622929317452854,155,78,0.5032258064516129,7.725266535797703,-5.926288315260568

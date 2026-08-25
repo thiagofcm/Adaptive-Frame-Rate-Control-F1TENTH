@@ -43,6 +43,34 @@ BAR_WIDTH = 0.23
 BUDGET_OFFSETS = {300: -BAR_WIDTH, 150: 0.0, 100: BAR_WIDTH}
 
 
+# BUDGETS = [500, 250, 167]
+
+# BUDGET_COLORS = {
+#     500: "#08519c",
+#     250: "#e6550d",
+#     167: "#31a354",
+# }
+
+# BAR_WIDTH = 0.23
+# BUDGET_OFFSETS = {
+#     500: -BAR_WIDTH,
+#     250: 0.0,
+#     167: BAR_WIDTH,
+# }
+
+# BUDGETS = [400, 200]
+
+# BUDGET_COLORS = {
+#     400: "#08519c",
+#     200: "#e6550d",
+# }
+
+# BAR_WIDTH = 0.30
+# BUDGET_OFFSETS = {
+#     400: -BAR_WIDTH / 2,
+#     200: BAR_WIDTH / 2,
+# }
+
 def parse_policy_name(policy):
     """Extract frame cost and budget from names such as
     adaptive_fc_0.075_bud_300.0 or adaptive_fc_0.075_bud_300.0_bp_10.0.

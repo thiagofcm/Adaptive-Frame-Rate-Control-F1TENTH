@@ -156,7 +156,7 @@ Data/Vehicles/TAL_mapsTest/*
 !Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_gbr_6_5_0/fast_Std_Std_TAL_f1_gbr_6_5_0_actor.pth
 !Data/Vehicles/TAL_mapsTest/fast_Std_Std_TAL_f1_mco_6_5_0/fast_Std_Std_TAL_f1_mco_6_5_0_actor.pth
 
-
-
+*.tar.gz
+*.pdf
 
 
